@@ -96,26 +96,57 @@ export function listenSupported(): boolean {
   return Boolean(Recognition());
 }
 
-/** Push-to-talk: listens for one utterance. Resolves with the transcript, or null (silence / error / unsupported). */
-export function listenOnce(lang: SpeechLang, signal?: AbortSignal): Promise<string | null> {
+/**
+ * Why listening produced no text:
+ * - denied: microphone permission refused (site or Windows privacy settings)
+ * - no-mic: no microphone found
+ * - service: the browser's recognition service is unreachable (offline, or a Chromium browser
+ *   without Google's speech service, e.g. Brave)
+ * - no-speech: nothing was said
+ * - unsupported: no Web Speech recognition (Firefox, Safari on some versions)
+ */
+export type ListenError = 'denied' | 'no-mic' | 'service' | 'no-speech' | 'unsupported' | 'other';
+export interface ListenResult {
+  text: string | null;
+  error?: ListenError;
+}
+
+const ERRORS: Record<string, ListenError> = {
+  'not-allowed': 'denied',
+  'service-not-allowed': 'denied',
+  'audio-capture': 'no-mic',
+  network: 'service',
+  'language-not-supported': 'service',
+  'no-speech': 'no-speech',
+  aborted: 'no-speech',
+};
+
+/** Push-to-talk: listens for one utterance. `onStart` fires when the microphone is actually open. */
+export function listenOnce(lang: SpeechLang, opts: { signal?: AbortSignal; onStart?: () => void } = {}): Promise<ListenResult> {
   const R = Recognition();
-  if (!R) return Promise.resolve(null);
+  if (!R) return Promise.resolve({ text: null, error: 'unsupported' });
   return new Promise((resolve) => {
-    const rec = new R();
+    const rec = new R() as RecognitionLike & { onaudiostart?: (() => void) | null };
     rec.lang = BCP47[lang];
     rec.interimResults = false;
     rec.maxAlternatives = 1;
     let text: string | null = null;
+    let error: ListenError | undefined;
+    rec.onaudiostart = () => opts.onStart?.();
     rec.onresult = (e) => {
       text = e.results[0]?.[0]?.transcript?.trim() || null;
     };
-    rec.onerror = () => {};
-    rec.onend = () => resolve(text);
-    signal?.addEventListener('abort', () => rec.abort(), { once: true });
+    rec.onerror = (e) => {
+      error = ERRORS[e.error] ?? 'other';
+      console.warn('[speech] recognition error:', e.error);
+    };
+    rec.onend = () => resolve(text ? { text } : { text: null, error: error ?? 'no-speech' });
+    opts.signal?.addEventListener('abort', () => rec.abort(), { once: true });
     try {
       rec.start();
-    } catch {
-      resolve(null);
+    } catch (err) {
+      console.warn('[speech] could not start recognition:', err);
+      resolve({ text: null, error: 'other' });
     }
   });
 }

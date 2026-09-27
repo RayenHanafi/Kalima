@@ -30,3 +30,6 @@ Thumbs.db
 
 # temporary dev browser session (tests only)
 apps/web/public/_dev-session.json
+
+.vercel
+.env*

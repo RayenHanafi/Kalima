@@ -10,7 +10,7 @@ import {
   type PublicQuizQuestion,
   type QuestionResult,
 } from '@kalima/lesson-engine';
-import { createSpeaker, listenOnce, listenSupported, parseCommand, type Speaker } from '@kalima/speech';
+import { createSpeaker, listenOnce, listenSupported, parseCommand, type ListenError, type Speaker } from '@kalima/speech';
 import { useEffect, useRef, useState } from 'react';
 import type { LessonApi } from './api';
 import { QuizView } from './QuizView';
@@ -82,6 +82,16 @@ export function LessonPlayer({ api, courseId, onExit }: LessonPlayerProps) {
   const t = strings[lang];
 
   const speaker = () => (speakerRef.current ??= createSpeaker(lang));
+  const listenMessage = (error?: ListenError) =>
+    error === 'denied'
+      ? t.micDenied
+      : error === 'no-mic'
+        ? t.micMissing
+        : error === 'service'
+          ? t.micService
+          : error === 'unsupported'
+            ? t.micUnsupported
+            : t.notHeard;
   const say = (...lines: string[]) => speaker().speak(lines.flatMap(splitSentences));
 
   // ── load session ─────────────────────────────────────────────────────────
@@ -269,11 +279,12 @@ export function LessonPlayer({ api, courseId, onExit }: LessonPlayerProps) {
     if (viaVoice && listenSupported()) {
       setStatus(t.listening);
       const run = runRef.current;
-      const heard = await listenOnce(lang);
+      const heard = await listenOnce(lang, { onStart: () => setStatus(t.speakNow) });
       if (run !== runRef.current) return; // the learner typed a question (or moved on) meanwhile
-      if (heard) return sendQuestion(heard);
-      setStatus(t.notHeard);
-      void say(t.notHeard);
+      if (heard.text) return sendQuestion(heard.text);
+      const msg = listenMessage(heard.error);
+      setStatus(msg);
+      void say(msg);
     }
     setTimeout(() => questionInput.current?.focus(), 0);
   }
@@ -318,20 +329,23 @@ export function LessonPlayer({ api, courseId, onExit }: LessonPlayerProps) {
 
   async function voiceCommand() {
     if (!listenSupported()) {
-      setStatus(t.notHeard);
+      setStatus(t.micUnsupported);
+      void say(t.micUnsupported);
       return;
     }
     if (stateRef.current?.status === 'EXPLAINING') pause();
     else stopSpeaking();
     setStatus(t.listening);
     const run = runRef.current;
-    const heard = await listenOnce(lang);
+    const heard = await listenOnce(lang, { onStart: () => setStatus(t.speakNow) });
     if (run !== runRef.current) return;
-    if (!heard) {
-      setStatus(t.notHeard);
+    if (!heard.text) {
+      const msg = listenMessage(heard.error);
+      setStatus(msg);
+      void say(msg);
       return;
     }
-    const c = parseCommand(heard);
+    const c = parseCommand(heard.text);
     switch (c.type) {
       case 'stop':
         setStatus(t.paused);

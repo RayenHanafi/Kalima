@@ -56,10 +56,20 @@ export function QuizView({ questions, lang, speaker, onSubmit }: QuizViewProps) 
   async function voice() {
     speaker.cancel();
     const heard = await listenOnce(lang);
-    if (!heard) return void speaker.speak([t.notHeard]);
-    setValue(heard);
-    await speaker.speak([t.youAnswered(heard)]);
-    void validate(heard);
+    if (!heard.text) {
+      const msg =
+        heard.error === 'denied'
+          ? t.micDenied
+          : heard.error === 'service'
+            ? t.micService
+            : heard.error === 'no-mic'
+              ? t.micMissing
+              : t.notHeard;
+      return void speaker.speak([msg]);
+    }
+    setValue(heard.text);
+    await speaker.speak([t.youAnswered(heard.text)]);
+    void validate(heard.text);
   }
 
   const keys = useRef<(e: KeyboardEvent) => void>(() => {});
