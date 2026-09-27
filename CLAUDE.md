@@ -36,6 +36,8 @@ pnpm --filter llm smoke -- --each # same, each provider on its own
 curl localhost:3000/api/health    # which providers / Supabase the server sees (names only)
 pnpm --filter web seed            # DEV: full workflow through the API (dev server must run); add `-- --lang fr`
 pnpm --filter web rls-check       # DEV: after seed — a second user must get 404 on the seed user's data
+pnpm --filter web page-check <payload.json>  # DEV: extension backend path (CORS → from-page → cache → explain)
+pnpm --filter web dev-session     # DEV: test-user session JSON for browser tests (while anonymous sign-in is off)
 ```
 
 Database: migrations in `supabase/migrations/` are applied with the Supabase MCP (`apply_migration`), then `get_advisors` (security) must be clean and the types regenerated into `apps/web/lib/database.types.ts`.
@@ -72,5 +74,6 @@ Windows note: write files as UTF-8 **without BOM** (PowerShell 5.1 `Set-Content 
 - Lesson state transitions are pure functions in `lesson-engine`, and each new transition needs a unit test.
 - Route handlers that stream or call models: `export const runtime = 'nodejs'` + explicit `maxDuration`.
 - Long work (PDF ingestion) is split into resumable batches that save progress in the DB; don't write one giant request.
-- Extension page adapters go in `apps/extension/adapters/<platform>.ts`, implement the shared `PageAdapter` interface and return the common `PagePayload` type. Always keep the `generic` fallback working.
+- Extension page extraction is `apps/extension/lib/extract.ts` → `extractPage()`. It is injected with `chrome.scripting.executeScript({ func })`, so it **must stay self-contained** (no imports, no outer variables). Platform adapters (Moodle, Coursera, Classroom) are branches inside it that pick the content root. Always keep the generic path and the "too little text → whole visible text" fallback working.
+- The extension side panel reuses `<LessonPlayer/>` through its own `LessonApi` (`apps/extension/lib/api.ts`). Never fork the player.
 - Keep it simple: this is a hackathon MVP. Prefer fewer files and fewer dependencies, and don't abstract early.

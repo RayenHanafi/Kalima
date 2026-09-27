@@ -11,7 +11,8 @@
         "seed": "tsx scripts/seed.ts",
         "rls-check": "tsx scripts/rls-check.ts",
         "postinstall": "node -e \"require('fs').copyFileSync(require.resolve('pdfjs-dist/build/pdf.worker.min.mjs'),'public/pdf.worker.min.mjs')\"",
-        "dev-session": "tsx scripts/dev-session.ts"
+        "dev-session": "tsx scripts/dev-session.ts",
+        "page-check": "tsx scripts/page-check.ts"
     },
     "dependencies": {
         "@base-ui/react": "^1.8.0",

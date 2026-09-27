@@ -1,17 +1,52 @@
+@import "tailwindcss";
+
+/* The shared player's classes live in packages/ui. */
+@source "../../../../packages/ui/src";
+@source "../../lib";
+
+/* Kalima tokens — same values as apps/web/app/globals.css (ARCHITECTURE.md §8b). */
 :root {
   --bg: #ffffff;
+  --surface: #f0fdf4;
   --text: #111827;
+  --text-muted: #4b5563;
+  --primary-base: #15803d;
+  --primary-hover: #166534;
   --primary-strong: #14532d;
+  --secondary-base: #b91c1c;
+  --secondary-hover: #991b1b;
+  --secondary-tint: #fef2f2;
+  --control-border: #6b7280;
 }
 
-body {
-  margin: 0;
-  padding: 1rem;
-  background: var(--bg);
-  color: var(--text);
-  font: 18px/1.5 system-ui, sans-serif;
+@theme inline {
+  --font-sans: "Atkinson Hyperlegible", system-ui, sans-serif;
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-surface: var(--surface);
+  --color-text-muted: var(--text-muted);
+  --color-primary: var(--primary-base);
+  --color-primary-foreground: #ffffff;
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-strong: var(--primary-strong);
+  --color-secondary: var(--secondary-base);
+  --color-secondary-foreground: #ffffff;
+  --color-secondary-hover: var(--secondary-hover);
+  --color-secondary-tint: var(--secondary-tint);
+  --color-border: var(--control-border);
 }
 
-h1 {
-  color: var(--primary-strong);
+@layer base {
+  html {
+    font-size: 112.5%;
+    @apply font-sans;
+  }
+  body {
+    margin: 0;
+    @apply bg-background text-foreground;
+  }
+  :focus-visible {
+    outline: 3px solid var(--primary-strong);
+    outline-offset: 2px;
+  }
 }

@@ -113,7 +113,8 @@ export interface PagePayload {
   title: string;
   lang?: Lang;
   sections: { heading: string; text: string }[];
-  images: { src: string; alt: string; nearbyText: string }[];
+  /** dataUrl: downscaled JPEG fetched by the extension; sectionIdx: section the image sits in. */
+  images: { dataUrl: string; alt: string; nearbyText: string; sectionIdx: number }[];
 }
 
 /** Minimal chat message shape (structurally compatible with @kalima/llm's Message). */
