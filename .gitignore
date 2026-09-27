@@ -6,6 +6,7 @@
 
 # private working notes
 PROMPTS.md
+RUN_GUIDE.md
 
 # deps & builds
 node_modules/
