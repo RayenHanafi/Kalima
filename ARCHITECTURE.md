@@ -88,6 +88,13 @@ Kalima/
 
 ### 4.1 Website — PDF ingestion
 
+**As built (phase 3): the PDF never leaves the browser.** `apps/web/lib/pdf.ts` (pdf.js) extracts each page's text, with paragraph breaks. It also renders a JPEG of each page that has images or no text layer (scanned). Then:
+1. `POST /api/courses` creates the course.
+2. `POST /api/courses/:id/pages` receives **one page per request**: text plus an optional page image, 3 in parallel. This stays under Vercel's 4.5 MB body limit and can resume where it stopped. The vision model describes the page's figures, or reads a scanned page, into `course_pages`.
+3. `POST /api/courses/:id/plan` runs.
+
+There is no Storage upload, which is better for privacy and simpler. The steps below were the original plan, kept for reference.
+
 Vercel functions cap request bodies at ~4.5 MB, so **files never go through the API**.
 
 1. Client `POST /api/courses` → creates the `courses` row and returns a **Supabase signed upload URL**.

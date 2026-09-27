@@ -21,6 +21,6 @@ export const TASK_REASONING = {
   ask: 'off',
   describeImage: 'off',
   evaluate: 'off', // choices are graded deterministically; the model only writes explanations
-  plan: 'low',
+  plan: 'off', // measured: 'low' took ~49 s for 2 pages; the model only returns block ranges, repaired in code
   quiz: 'off', // measured: 'low' took ~35 s; answers are validated/normalized server-side anyway
 } as const;

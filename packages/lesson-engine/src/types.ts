@@ -35,6 +35,7 @@ export type LessonEvent =
   | { type: 'NEXT' }
   | { type: 'PREVIOUS' }
   | { type: 'REPEAT' }
+  | { type: 'GOTO'; chunkIdx: number }
   | { type: 'STOP'; sentenceOffset: number }
   | { type: 'CONTINUE' }
   | { type: 'ASK' }

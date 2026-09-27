@@ -26,3 +26,6 @@ Thumbs.db
 
 # dev seed output (contains a short-lived test token)
 .seed-session.json
+
+# temporary dev browser session (tests only)
+apps/web/public/_dev-session.json

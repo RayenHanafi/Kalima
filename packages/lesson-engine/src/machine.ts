@@ -30,6 +30,12 @@ function preceding(s: LessonState): number {
   return Math.max(0, s.position.chunkIdx - 1);
 }
 
+/** Jump to any chunk (outline navigation); in review mode only to chunks in the review queue. */
+function goTo(s: LessonState, chunkIdx: number): LessonState {
+  const valid = s.mode === 'review' ? s.reviewQueue.includes(chunkIdx) : chunkIdx >= 0 && chunkIdx < s.chunkCount;
+  return valid ? { ...s, position: at(chunkIdx) } : s;
+}
+
 function advance(s: LessonState): LessonState {
   const n = following(s);
   if (n !== null) return { ...s, position: at(n) };
@@ -62,6 +68,8 @@ export function next(s: LessonState, e: LessonEvent): LessonState {
           return { ...s, position: at(preceding(s)) };
         case 'REPEAT':
           return { ...s, position: at(s.position.chunkIdx) };
+        case 'GOTO':
+          return goTo(s, e.chunkIdx);
         case 'STOP':
           return { ...s, status: 'PAUSED', position: { ...s.position, sentenceOffset: Math.max(0, e.sentenceOffset) } };
         case 'ASK':
@@ -84,6 +92,10 @@ export function next(s: LessonState, e: LessonEvent): LessonState {
           return { ...s, status: 'EXPLAINING', position: at(preceding(s)) };
         case 'REPEAT':
           return { ...s, status: 'EXPLAINING', position: at(s.position.chunkIdx) };
+        case 'GOTO': {
+          const moved = goTo(s, e.chunkIdx);
+          return moved === s ? s : { ...moved, status: 'EXPLAINING' };
+        }
         default:
           return s;
       }

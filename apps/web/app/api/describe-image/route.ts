@@ -1,9 +1,8 @@
-import { describeImageMessages, ImageDescriptionSchema, TASK_REASONING } from "@kalima/lesson-engine";
-import { chat } from "@kalima/llm";
 import { z } from "zod";
 import { aiFailure, fail, readJson } from "@/lib/http";
+import { describeImage } from "@/lib/lesson/describe";
 import { ImageError, loadImage } from "@/lib/lesson/image";
-import { authenticate, serviceDb } from "@/lib/supabase/server";
+import { authenticate } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -28,33 +27,10 @@ export async function POST(req: Request) {
     if (err instanceof ImageError) return fail(400, "bad_image", err.message);
     throw err;
   }
-
-  const { data: hit } = await auth.db
-    .from("image_descriptions")
-    .select("short, detailed")
-    .eq("image_hash", image.hash)
-    .eq("lang", body.lang)
-    .maybeSingle();
-  if (hit) return Response.json({ ...hit, hash: image.hash, cached: true });
-
-  let result;
   try {
-    result = await chat({
-      messages: describeImageMessages({ lang: body.lang, imageUrl: image.dataUrl, context: body.context }),
-      schema: ImageDescriptionSchema,
-      reasoning: TASK_REASONING.describeImage,
-      maxTokens: 800,
-      timeoutMs: 45_000,
-      signal: req.signal,
-    });
+    const d = await describeImage(auth.db, image, body.lang, body.context, req.signal);
+    return Response.json({ short: d.short, detailed: d.detailed, hash: image.hash, cached: d.cached, provider: d.provider });
   } catch (err) {
     return aiFailure(err);
   }
-
-  // Shared cache (no personal data): only the service role may write it (ARCHITECTURE.md §7).
-  await serviceDb()
-    .from("image_descriptions")
-    .upsert({ image_hash: image.hash, lang: body.lang, short: result.data.short, detailed: result.data.detailed, model: result.model });
-
-  return Response.json({ ...result.data, hash: image.hash, cached: false, provider: result.provider });
 }

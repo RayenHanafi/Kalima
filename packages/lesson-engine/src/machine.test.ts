@@ -51,6 +51,17 @@ describe('EXPLAINING', () => {
     expect(s.position).toEqual({ chunkIdx: 1, sentenceOffset: 0 });
   });
 
+  it('GOTO jumps to a valid chunk and ignores invalid ones', () => {
+    expect(next(explaining(), { type: 'GOTO', chunkIdx: 2 }).position).toEqual({ chunkIdx: 2, sentenceOffset: 0 });
+    const s = explaining();
+    expect(next(s, { type: 'GOTO', chunkIdx: 9 })).toBe(s);
+  });
+
+  it('GOTO from PAUSED resumes explaining at that chunk', () => {
+    const s = run(explaining(), { type: 'STOP', sentenceOffset: 1 }, { type: 'GOTO', chunkIdx: 1 });
+    expect(s).toMatchObject({ status: 'EXPLAINING', position: { chunkIdx: 1, sentenceOffset: 0 } });
+  });
+
   it('STOP → PAUSED and remembers the sentence', () => {
     const s = next(explaining(), { type: 'STOP', sentenceOffset: 2 });
     expect(s).toMatchObject({ status: 'PAUSED', position: { chunkIdx: 0, sentenceOffset: 2 } });
