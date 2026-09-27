@@ -1,0 +1,23 @@
+{
+  "name": "@kalima/llm",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "smoke": "tsx scripts/smoke.ts"
+  },
+  "dependencies": {
+    "openai": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "dotenv": "latest",
+    "tsx": "latest",
+    "typescript": "^5",
+    "vitest": "latest"
+  }
+}

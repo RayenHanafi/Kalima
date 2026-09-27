@@ -1,0 +1,17 @@
+:root {
+  --bg: #ffffff;
+  --text: #111827;
+  --primary-strong: #14532d;
+}
+
+body {
+  margin: 0;
+  padding: 1rem;
+  background: var(--bg);
+  color: var(--text);
+  font: 18px/1.5 system-ui, sans-serif;
+}
+
+h1 {
+  color: var(--primary-strong);
+}

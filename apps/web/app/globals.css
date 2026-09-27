@@ -1,0 +1,104 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Kalima tokens (ARCHITECTURE.md §8b) — every pair checked for WCAG 2.2 AA.
+   Components use these through Tailwind classes; never raw hex. */
+:root {
+  --bg: #ffffff;
+  --surface: #f0fdf4;
+  --text: #111827;
+  --text-muted: #4b5563;
+  --primary-base: #15803d;
+  --primary-hover: #166534;
+  --primary-strong: #14532d;
+  --secondary-base: #b91c1c;
+  --secondary-hover: #991b1b;
+  --secondary-tint: #fef2f2;
+  --control-border: #6b7280;
+
+  /* shadcn semantic variables mapped onto the Kalima tokens */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--bg);
+  --popover-foreground: var(--text);
+  --primary: var(--primary-base);
+  --primary-foreground: #ffffff;
+  --secondary: var(--secondary-base);
+  --secondary-foreground: #ffffff;
+  --muted: var(--surface);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--surface);
+  --accent-foreground: var(--primary-strong);
+  --destructive: var(--secondary-base);
+  --border: var(--control-border);
+  --input: var(--control-border);
+  --ring: var(--primary-strong);
+  --radius: 0.75rem;
+}
+
+@theme inline {
+  --font-sans: var(--font-sans);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Kalima-only tokens */
+  --color-surface: var(--surface);
+  --color-text-muted: var(--text-muted);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-strong: var(--primary-strong);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-secondary-tint: var(--secondary-tint);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    @apply font-sans;
+    font-size: 112.5%; /* 18px base: minimum text size for Kalima */
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  /* Visible focus on every focusable element: 3px solid, 2px offset. */
+  :focus-visible {
+    outline: 3px solid var(--primary-strong);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
