@@ -34,6 +34,8 @@ pnpm lint
 pnpm --filter llm smoke           # live AI check through the chain (text + image + stream)
 pnpm --filter llm smoke -- --each # same, each provider on its own
 curl localhost:3000/api/health    # which providers / Supabase the server sees (names only)
+pnpm --filter web seed            # DEV: full workflow through the API (dev server must run); add `-- --lang fr`
+pnpm --filter web rls-check       # DEV: after seed — a second user must get 404 on the seed user's data
 ```
 
 Database: migrations in `supabase/migrations/` are applied with the Supabase MCP (`apply_migration`), then `get_advisors` (security) must be clean and the types regenerated into `apps/web/lib/database.types.ts`.
@@ -45,7 +47,7 @@ Windows note: write files as UTF-8 **without BOM** (PowerShell 5.1 `Set-Content 
 ### AI calls
 - Provider chain: **NVIDIA → Groq → OpenRouter**. Each provider gets **3 attempts** with backoff before falling to the next (details in `ARCHITECTURE.md` §5). Never bypass the chain.
 - Call models **only** through `packages/llm`. Never import `openai` elsewhere, and never hard-code a model ID — read it from `NV_MODEL_*` env vars.
-- Prompts live in `packages/lesson-engine/prompts/`, one file per task (explain, ask, plan, quiz, evaluate, describe-image), with FR and EN variants.
+- Prompts live in `packages/lesson-engine/src/prompts/`, one file per task (explain, ask, plan, quiz, evaluate, describe-image), with FR and EN variants.
 - Anything the code parses (plan, quiz, evaluation) must come back as JSON validated with **zod**; retry once on invalid output.
 - Stream every user-facing text response (SSE). The client speaks sentence by sentence.
 - Q&A answers must be grounded in the course chunks. If the answer isn't in the course, say so, then give general knowledge clearly labelled as such.

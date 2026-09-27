@@ -23,3 +23,6 @@ dist/
 # os
 .DS_Store
 Thumbs.db
+
+# dev seed output (contains a short-lived test token)
+.seed-session.json

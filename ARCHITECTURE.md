@@ -115,12 +115,25 @@ Vercel functions cap request bodies at ~4.5 MB, so **files never go through the 
 | Step | Endpoint | Model input | Output |
 |---|---|---|---|
 | Explain chunk | `POST /api/sessions/:id/explain` (SSE) | chunk + course outline + learner language/level | streamed teaching text; the client speaks it sentence by sentence |
-| Ask | `POST /api/sessions/:id/ask` (SSE) | question + current chunk + top-k retrieved chunks (pgvector) | streamed answer grounded in the course, citing the section |
+| Ask | `POST /api/sessions/:id/ask` (SSE) | question + current chunk + the full course text (MVP, no retrieval) | streamed answer grounded in the course, citing the part; off-course questions are labelled |
 | Generate quiz | `POST /api/sessions/:id/quiz` | all chunks explained | JSON: 5–10 questions (MCQ / true-false / short answer), each with `chunk_id` |
 | Evaluate | `POST /api/quizzes/:id/submit` | questions + learner answers | JSON: per-question `correct`, `explanation`, `correct_answer`; `weak_chunk_ids`; score |
 | Review | `explain` with `mode=review` | weak chunks + the learner's wrong answers | targeted re-explanation |
 
-Streaming: route handlers return a `ReadableStream` (`text/event-stream`) that forwards NVIDIA's streamed tokens. Mark them `export const runtime = 'nodejs'` and set `maxDuration`.
+Streaming: route handlers return a `ReadableStream` (`text/event-stream`, helper `apps/web/lib/sse.ts`) that forwards the model's tokens. Mark them `export const runtime = 'nodejs'` and set `maxDuration`.
+
+**SSE protocol** (explain / ask):
+- `event: delta` with `data: {"text": "..."}`: the next piece of text.
+- `event: done` with `data: {chunkIdx, chunkId, mode, title, cached, provider}`: finished.
+- `event: error` with `data: {error: "ai_unavailable"|"stream_interrupted"|"internal_error", midStream}`: if `midStream` is true, some text was already sent, so the client resumes from its last spoken sentence.
+
+**Planning never rewrites the course.** The server cuts pages into numbered blocks (`toBlocks`). The model only returns block *ranges* + titles, and `assembleChunks` repairs gaps and overlaps. So chunk content is always the course's own words, and the model's output stays small.
+
+**Quiz answers never leave the server.** `POST .../quiz` returns questions without `answer`. Grading (`POST /api/quizzes/:id/submit`) resolves spoken or typed choices in code (`gradeChoice`: "B", "option b", "2", "vrai", or the option text). The model grades short answers and writes explanations. If every AI provider is down, the choice grades still come back.
+
+**Auth:** every route requires `Authorization: Bearer <Supabase access token>` (verified with `getClaims`) and queries **as the user**, through RLS. Another user's ids return 404; `pnpm --filter web rls-check` verifies this. The service role is used only to write `image_descriptions`.
+
+**Image fetches** (`describe-image` with a URL): public `https:` hostnames only (no IP literals, localhost or internal TLDs), no redirects, 10 s timeout, max 5 MB, image types only.
 
 ## 5. AI models (NVIDIA NIM)
 
@@ -173,15 +186,19 @@ One model covers teaching, Q&A, quiz, grading, image / chart description and sca
 
 **MVP simplification:** a whole course fits in the ~256K context. For Q&A, send the full course text instead of doing retrieval, so no embedding model or pgvector is needed at first. Add retrieval only if a course is too long.
 
-**Reasoning budget per task:**
+**Reasoning per task** (`TASK_REASONING` in `packages/lesson-engine`, tuned on real runs on 2026-09-27):
 
-| Task | Reasoning |
-|---|---|
-| Explain / ask | Small or zero (latency first) |
-| Plan / quiz / evaluate | Larger (quality first) |
-| Image description | Small |
+| Task | Reasoning | Measured (NVIDIA) | Why |
+|---|---|---|---|
+| Explain / review | off | first words ~2 s | With `low`, the first word took ~20 s (thinking time) |
+| Ask | off | first words ~0.7 s | Same |
+| Describe image | off | ~1–3 s | `low` took 28 s |
+| Evaluate | off | ~7 s | Multiple choice / true-false are graded in code; the model only writes explanations |
+| Quiz | off | 7–13 s | `low` took ~35 s; answers are validated and normalized in code |
+| Plan | low | ~26 s (2 pages) | Structure matters; runs during upload, with progress shown |
 
-The client strips any reasoning content and only speaks the final answer.
+Reasoning text is stripped server-side; only the final answer is streamed and spoken.
+NVIDIA's free tier sometimes sends "ResourceExhausted" *inside* the stream (not as an HTTP 503); the chain treats it as retryable.
 
 **Speech default:** browser **Web Speech API** (`SpeechRecognition` + `speechSynthesis`). It's free and instant, runs on the device (GDPR-friendly) and supports FR/EN. Riva is an upgrade path.
 

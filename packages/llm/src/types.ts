@@ -24,6 +24,8 @@ export interface CallLog {
   latency_ms: number;
   ok: boolean;
   status?: number | string;
+  /** Provider error message on failure (truncated). Never prompt or output content. */
+  error?: string;
 }
 
 export interface LlmOptions {

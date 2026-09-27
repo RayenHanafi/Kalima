@@ -133,6 +133,7 @@ export function createLlm(options: LlmOptions) {
             latency_ms: Date.now() - t0,
             ok: false,
             status: f.status,
+            error: err instanceof Error ? err.message.slice(0, 160) : undefined,
           };
           logger(entry);
           log.push(entry);
