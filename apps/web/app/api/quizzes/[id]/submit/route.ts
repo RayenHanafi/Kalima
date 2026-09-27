@@ -8,6 +8,7 @@ import {
 } from "@kalima/lesson-engine";
 import { chat, LlmJsonError, LlmUnavailableError } from "@kalima/llm";
 import { z } from "zod";
+import { track } from "@/lib/events";
 import { fail, readJson } from "@/lib/http";
 import { asLang, asQuestions, loadCourse } from "@/lib/lesson/data";
 import { authenticate } from "@/lib/supabase/server";
@@ -79,6 +80,7 @@ export async function POST(req: Request, ctx: RouteContext<"/api/quizzes/[id]/su
     .single();
   if (error) throw error;
   await db.from("lesson_sessions").update({ status: "EVALUATED" }).eq("id", quiz.session_id);
+  track(auth.userId, "quiz_submitted", { meta: { score, total: results.length } });
 
   return Response.json({ attemptId: attempt.id, score, results, weakChunkIdxs, weakChunkIds, provider });
 }

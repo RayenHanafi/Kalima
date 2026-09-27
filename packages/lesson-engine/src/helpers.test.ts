@@ -4,7 +4,7 @@ import { assembleChunks } from './plan';
 import { askMessages } from './prompts/ask';
 import { describeImageMessages } from './prompts/describe-image';
 import { explainMessages } from './prompts/explain';
-import { splitSentences, toBlocks } from './text';
+import { splitSentences, stripGreeting, toBlocks } from './text';
 import type { Chunk, FigureDescription, QuizQuestion } from './types';
 
 describe('splitSentences', () => {
@@ -19,6 +19,16 @@ describe('splitSentences', () => {
 
   it('does not split decimals', () => {
     expect(splitSentences('It measures 2.5 cm. Then it grows.')).toEqual(['It measures 2.5 cm.', 'Then it grows.']);
+  });
+});
+
+describe('stripGreeting', () => {
+  it('drops a leading greeting only', () => {
+    expect(stripGreeting('Bonjour. Ce cours porte sur…')).toBe('Ce cours porte sur…');
+    expect(stripGreeting('Hello everyone! Today we…')).toBe('Today we…');
+    expect(stripGreeting('Salut, la mitose…')).toBe('la mitose…');
+    expect(stripGreeting('Bonjour est un mot.')).toBe('Bonjour est un mot.');
+    expect(stripGreeting('La cellule dit bonjour.')).toBe('La cellule dit bonjour.');
   });
 });
 

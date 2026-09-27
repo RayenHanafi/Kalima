@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { track } from "@/lib/events";
 import { fail, readJson } from "@/lib/http";
 import { authenticate } from "@/lib/supabase/server";
 
@@ -35,6 +36,7 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/sessions/[id]"
     .maybeSingle();
   if (error) throw error;
   if (!data) return fail(404, "session_not_found");
+  if (body.status === "DONE") track(auth.userId, "session_completed");
   return Response.json({
     id: data.id,
     status: data.status,

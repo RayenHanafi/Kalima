@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { track } from "@/lib/events";
 import { fail, readJson } from "@/lib/http";
 import { loadChunks, loadCourse } from "@/lib/lesson/data";
 import { authenticate } from "@/lib/supabase/server";
@@ -39,6 +40,7 @@ export async function POST(req: Request) {
     session = data;
   }
 
+  track(auth.userId, "session_started", { platform: course.platform ?? course.source_type, meta: { resumed } });
   return Response.json({
     resumed,
     session: {

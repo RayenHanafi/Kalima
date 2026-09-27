@@ -1,6 +1,7 @@
 import { askMessages, TASK_REASONING } from "@kalima/lesson-engine";
 import { chatStream } from "@kalima/llm";
 import { z } from "zod";
+import { track } from "@/lib/events";
 import { fail, readJson } from "@/lib/http";
 import { loadSession } from "@/lib/lesson/data";
 import { sse } from "@/lib/sse";
@@ -21,7 +22,7 @@ export async function POST(req: Request, ctx: RouteContext<"/api/sessions/[id]/a
   const body = await readJson(req, Body);
   if (body instanceof Response) return body;
   const { id } = await ctx.params;
-  const { db } = auth;
+  const { db, userId } = auth;
 
   const loaded = await loadSession(db, id);
   if (!loaded) return fail(404, "session_not_found");
@@ -43,6 +44,7 @@ export async function POST(req: Request, ctx: RouteContext<"/api/sessions/[id]/a
     if (text.trim()) {
       await db.from("messages").insert({ session_id: id, role: "assistant", kind: "answer", chunk_idx: chunkIdx, lang, content: text.trim() });
     }
+    track(userId, "question_asked", { meta: { provider: step.value.provider } });
     send("done", { chunkIdx, provider: step.value.provider });
   }, req.signal);
 }

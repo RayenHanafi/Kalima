@@ -1,6 +1,6 @@
 export type * from './types';
 export { initialState, next } from './machine';
-export { splitSentences, toBlocks, type Block, type SourcePage } from './text';
+export { splitSentences, stripGreeting, toBlocks, type Block, type SourcePage } from './text';
 export { assembleChunks, type AssembledChunk, type PlannedRange } from './plan';
 export { gradeChoice, resolveChoice } from './grading';
 

@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
+import { track } from "@/lib/events";
 import { aiFailure, readJson } from "@/lib/http";
 import { describeImage } from "@/lib/lesson/describe";
 import { loadImage } from "@/lib/lesson/image";
@@ -74,6 +75,7 @@ export async function POST(req: Request) {
     .select("id")
     .single();
   if (error) throw error;
+  track(auth.userId, "course_created", { platform: body.platform, meta: { sections: body.sections.length } });
 
   // Describe images in parallel; a failed image is skipped, never blocks the lesson.
   const described = await Promise.allSettled(

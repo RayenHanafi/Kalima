@@ -1,6 +1,7 @@
 import {
   explainMessages,
   splitSentences,
+  stripGreeting,
   TASK_REASONING,
   type LessonMode,
   type Mistake,
@@ -8,6 +9,7 @@ import {
 } from "@kalima/lesson-engine";
 import { chatStream } from "@kalima/llm";
 import { z } from "zod";
+import { track } from "@/lib/events";
 import { fail, readJson } from "@/lib/http";
 import { asQuestions, detailLevel, loadSession } from "@/lib/lesson/data";
 import { sse } from "@/lib/sse";
@@ -76,18 +78,36 @@ export async function POST(req: Request, ctx: RouteContext<"/api/sessions/[id]/e
   });
 
   return sse(async (send, signal) => {
+    const t0 = Date.now();
+    let firstWordMs: number | undefined;
     const gen = chatStream({ messages, reasoning: TASK_REASONING.explain, maxTokens: 1024, signal });
     let text = "";
+    // Hold the opening words until the first sentence ends, to drop a stray "Bonjour." greeting.
+    let head: string | null = "";
+    const emit = (piece: string) => {
+      if (!piece) return;
+      firstWordMs ??= Date.now() - t0;
+      text += piece;
+      send("delta", { text: piece });
+    };
     let step = await gen.next();
     while (!step.done) {
-      text += step.value;
-      send("delta", { text: step.value });
+      if (head === null) emit(step.value);
+      else {
+        head += step.value;
+        if (/[.!?]/.test(head) || head.length > 60) {
+          emit(stripGreeting(head));
+          head = null;
+        }
+      }
       step = await gen.next();
     }
+    if (head) emit(stripGreeting(head));
     const content = text.trim();
     if (content) {
       await db.from("messages").insert({ session_id: id, role: "assistant", kind, chunk_idx: chunkIdx, lang, content });
     }
+    track(userId, "chunk_explained", { durationMs: firstWordMs, meta: { mode, provider: step.value.provider } });
     send("done", { ...meta, cached: false, provider: step.value.provider });
   }, req.signal);
 }

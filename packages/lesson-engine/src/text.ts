@@ -14,6 +14,11 @@ export function splitSentences(text: string): string[] {
   );
 }
 
+/** Removes a leading greeting ("Bonjour.", "Hello everyone!") that models add despite instructions. */
+export function stripGreeting(text: string): string {
+  return text.replace(/^\s*(bonjour|bonsoir|salut|hello|hi)(\s+(à\s+tou(te)?s|everyone|there|all))?\s*[,.!]\s*/i, '');
+}
+
 export interface Block {
   /** Stable id shown to the planner, e.g. "b7". */
   id: string;

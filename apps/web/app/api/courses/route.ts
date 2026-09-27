@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { track } from "@/lib/events";
 import { readJson } from "@/lib/http";
 import { authenticate } from "@/lib/supabase/server";
 
@@ -33,5 +34,6 @@ export async function POST(req: Request) {
     .select("id")
     .single();
   if (error) throw error;
+  track(auth.userId, "course_created", { platform: body.sourceType, meta: { pages: body.pageCount } });
   return Response.json({ courseId: data.id });
 }
